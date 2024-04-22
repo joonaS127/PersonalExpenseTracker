@@ -17,6 +17,15 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS expenses (
                date DATE NOT NULL
 )''')
 
+# Create the monthly expense table
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS monthly_budget (
+               month TEXT PRIMARY KEY,
+               budget REAL NOT NULL
+             )
+''')
+
+
 conn.commit()
 cursor.close()
 conn.close()

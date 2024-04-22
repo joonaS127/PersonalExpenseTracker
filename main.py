@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox, END
 import datetime
 import database
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import collections
 
 is_displaying_data = False
 recursive_call_count = 0  # Define the recursive call count variable
@@ -50,13 +53,20 @@ def open_expense_tracker_window(selected_month):
             add_to_treeview(database.fetch_expenses_by_month(selected_month))
 
     def clear():
-        print("Clear function is called!!!!!")
         id_entry.delete(0, END)
         amount_entry.delete(0, END)
         category_combobox.set('')
         desc_entry.delete(0, END)
         date_combobox.set('')
-        print("Entry fields cleared!!!!!")
+
+    def clear_the_selection():
+        tree.selection_remove(tree.focus())
+        id_entry.delete(0, END)
+        amount_entry.delete(0, END)
+        category_combobox.set('')
+        desc_entry.delete(0, END)
+        date_combobox.set('')
+
 
     def delete():
         selected_expense = tree.focus()
@@ -115,6 +125,28 @@ def open_expense_tracker_window(selected_month):
           date_combobox.set(row[4])
        elif not item_id:
            clear()
+
+    def show_chart():
+        expenses = database.fetch_expenses_by_month(selected_month)
+
+        # Counting the number of expenses per each category
+        category_count = collections.Counter(expense[2] for expense in expenses)
+
+        # Creating the pie chart
+        fig, ax = plt.subplots()
+        ax.pie(category_count.values(), labels=category_count.keys(), autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')
+
+        # New Tkinter window for the charts
+        chart_window = tk.Toplevel(window)
+        chart_window.title('Monthly expenses')
+        chart_window.geometry('400x400')
+
+        # Embedding the chart into the new window
+        canvas = FigureCanvasTkAgg(fig, master=chart_window)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+
 
        
     # Labels
@@ -181,9 +213,12 @@ def open_expense_tracker_window(selected_month):
                            activebackground='#00cc00', cursor='hand2', width=15, bd=0)
     update_btn.grid(row=6, column=1, padx=10, pady=10)
 
-    clear_all_btn = tk.Button(window, command=clear, text='Clear entries', font=font1, fg='#000000', bg='#ffff00',
+    clear_all_btn = tk.Button(window, command=clear_the_selection, text='Clear entries', font=font1, fg='#000000', bg='#ffff00',
                         activebackground='#00cc00', cursor='hand2', width=15, bd=0)
     clear_all_btn.grid(row=7, column=1, padx=10, pady=10)
+
+    chart_btn = tk.Button(window, text='Show Charts', command=show_chart)
+    chart_btn.grid(row=8, column=1, padx=10, pady=10)
 
     add_to_treeview(expenses)
 
