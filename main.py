@@ -16,7 +16,7 @@ def open_expense_tracker_window(selected_month):
     expenses = database.fetch_expenses_by_month(selected_month)
     window = tk.Toplevel()
     window.title(f'Expense Tracker - {selected_month}')
-    window.geometry('1000x350')
+    window.geometry('1000x380')
     window.config(bg='#f0f0f0')
     window.resizable(False, False)
 
@@ -126,27 +126,35 @@ def open_expense_tracker_window(selected_month):
        elif not item_id:
            clear()
 
-    def show_chart():
-        expenses = database.fetch_expenses_by_month(selected_month)
+    def show_chart(selected_month):
+    # Fetch expenses and create a pie chart
+       expenses = database.fetch_expenses_by_month(selected_month)
+       category_count = collections.Counter(expense[2] for expense in expenses)
 
-        # Counting the number of expenses per each category
-        category_count = collections.Counter(expense[2] for expense in expenses)
+       fig, ax = plt.subplots()
+       ax.pie(category_count.values(), labels=category_count.keys(), autopct='%1.1f%%', startangle=90)
+       ax.axis('equal')
 
-        # Creating the pie chart
-        fig, ax = plt.subplots()
-        ax.pie(category_count.values(), labels=category_count.keys(), autopct='%1.1f%%', startangle=90)
-        ax.axis('equal')
+    # Create a new window for the chart
+       chart_window = tk.Toplevel()
+       chart_window.title("Monthly Expenses")
+       chart_window.geometry("400x450")  # Ensure the window is tall enough
 
-        # New Tkinter window for the charts
-        chart_window = tk.Toplevel(window)
-        chart_window.title('Monthly expenses')
-        chart_window.geometry('400x400')
+    # Embed the pie chart in the window
+       canvas = FigureCanvasTkAgg(fig, master=chart_window)
+       canvas.draw()
+       canvas.get_tk_widget().pack(pady=10)  # Ensure padding for the chart
 
-        # Embedding the chart into the new window
-        canvas = FigureCanvasTkAgg(fig, master=chart_window)
-        canvas.draw()
-        canvas.get_tk_widget().pack()
+    # Get the monthly budget and display it
+       monthly_budget = database.get_monthly_budget(selected_month)
 
+       if monthly_budget is not None:
+           budget_text = f"Monthly budget for {selected_month}: ${monthly_budget:.2f}"
+       else:
+           budget_text = "No budget set for this month"
+
+       budget_label = tk.Label(chart_window, text=budget_text, font=("Arial", 12))
+       budget_label.pack(pady=10)  # Ensure padding for the budget label
 
        
     # Labels
@@ -217,8 +225,11 @@ def open_expense_tracker_window(selected_month):
                         activebackground='#00cc00', cursor='hand2', width=15, bd=0)
     clear_all_btn.grid(row=7, column=1, padx=10, pady=10)
 
-    chart_btn = tk.Button(window, text='Show Charts', command=show_chart)
-    chart_btn.grid(row=8, column=1, padx=10, pady=10)
+    chart_btn = tk.Button(window, text='Show Charts', font=font1, command=lambda: show_chart(selected_month))
+    chart_btn.grid(row=12, column=2, padx=50, pady=15, sticky='w')
+
+    set_budget_btn = tk.Button(window, text='Set Budget', font=font1, command=lambda: open_set_budget_window(selected_month))
+    set_budget_btn.grid(row=12, column=2, padx=0, pady=15)
 
     add_to_treeview(expenses)
 
@@ -240,5 +251,52 @@ month_combobox.current(0)
 
 select_button = ttk.Button(root, text='Select Month', command=select_month)
 select_button.pack()
+
+def open_set_budget_window(selected_month):
+    window = tk.Toplevel()
+    window.title(f'Set Budget - {selected_month}')
+    window.geometry('300x150')
+    window.resizable(False, False)
+
+    font = ('Arial', 12)
+
+    budget_label = ttk.Label(window, text='Budget', font=font)
+    budget_label.pack(pady=10)
+
+    budget_entry = ttk.Entry(window, font=font)
+    budget_entry.pack(pady=10)
+
+    def clear_budget_entry():
+        budget_entry.delete(0, END)
+
+    def set_budget():
+        budget = budget_entry.get()
+        if budget.isnumeric():
+            budget = float(budget)
+            database.set_monthly_budget(selected_month, budget)
+            messagebox.showinfo('Success', f'Budget set to {budget} for {selected_month}')
+        else:
+            messagebox.showerror('Error', 'Please enter a valid number for the budget')
+
+    def update_budget():
+        new_budget = budget_entry.get()
+        if new_budget.isnumeric():
+            new_budget = float(new_budget)
+            database.update_monthly_budget(selected_month, new_budget)
+            clear_budget_entry()
+            messagebox.showinfo('Success', f'Budget updated to {new_budget} for {selected_month}')
+        else:
+            messagebox.showerror('Error', 'Please enter a valid number')
+
+    # Create a frame to hold the buttons
+    button_frame = tk.Frame(window)
+    button_frame.pack(pady=10)
+
+    # Buttons to Set and Update Budget
+    set_budget_btn = ttk.Button(button_frame, text='Set Budget', command=set_budget)
+    set_budget_btn.pack(side=tk.LEFT,  padx=5)
+
+    update_budget_btn = ttk.Button(button_frame, text='Update Budget', command=update_budget)
+    update_budget_btn.pack(side=tk.LEFT, padx=5)
 
 root.mainloop()
