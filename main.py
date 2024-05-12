@@ -145,11 +145,16 @@ def open_expense_tracker_window(selected_month):
        canvas.draw()
        canvas.get_tk_widget().pack(pady=10)  # Ensure padding for the chart
 
-    # Get the monthly budget and display it
+    # Get the monthly budget
        monthly_budget = database.get_monthly_budget(selected_month)
 
+    # Get the total expenses for the month
+       total_expenses = database.get_total_expenses_for_month(selected_month)
+       print("TOTAL EXPENSES: ", total_expenses)
+
        if monthly_budget is not None:
-           budget_text = f"Monthly budget for {selected_month}: ${monthly_budget:.2f}"
+           remaining_budget = monthly_budget - total_expenses
+           budget_text = f"Remaining budget for {selected_month}: ${remaining_budget:.2f}"
        else:
            budget_text = "No budget set for this month"
 
